@@ -73,6 +73,47 @@ The service will be available at `http://localhost:8000`.
 }
 ```
 
+## Code Formatting
+
+The service automatically handles code formatting issues to make it easier to send requests:
+
+- Converts tabs to spaces
+- Normalizes indentation levels
+- Handles different newline formats (\n, \r\n)
+- Preserves empty lines
+- Removes common leading indentation
+
+This means you can send code in various formats and the service will normalize it properly. For example, all these will work:
+
+```python
+# Example 1: Normal indentation
+code = """
+def hello():
+    print("Hello")
+    if True:
+        print("World")
+hello()
+"""
+
+# Example 2: Extra indentation (will be normalized)
+code = """
+        def hello():
+            print("Hello")
+            if True:
+                print("World")
+        hello()
+"""
+
+# Example 3: Mixed tabs and spaces (will be converted to spaces)
+code = """
+def hello():
+	print("Hello")
+	if True:
+		print("World")
+hello()
+"""
+```
+
 ## Usage Examples
 
 ### Using cURL
