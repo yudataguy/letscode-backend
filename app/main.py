@@ -1,10 +1,11 @@
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+import os
 import subprocess
 import tempfile
-import os
 import uuid
 from typing import Optional
+
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
 
 app = FastAPI(title="Python Code Execution Service")
 
@@ -20,8 +21,53 @@ class ExecutionResult(BaseModel):
     execution_time: float
 
 
+def normalize_indentation(code: str) -> str:
+    """
+    Normalize the indentation of code by:
+    1. Converting tabs to spaces
+    2. Detecting the minimum indentation level
+    3. Removing any common leading indentation
+    4. Ensuring consistent newlines
+    5. Removing leading/trailing blank lines
+    """
+    # Convert tabs to spaces
+    code = code.replace("\t", "    ")
+
+    # Split into lines
+    lines = code.replace("\r\n", "\n").split("\n")
+
+    # Remove leading and trailing empty lines
+    while lines and not lines[0].strip():
+        lines.pop(0)
+    while lines and not lines[-1].strip():
+        lines.pop()
+
+    if not lines:
+        return ""
+
+    # Find minimum indentation level (excluding empty lines)
+    non_empty_lines = [line for line in lines if line.strip()]
+    if not non_empty_lines:
+        return ""
+
+    min_indent = min(len(line) - len(line.lstrip()) for line in non_empty_lines)
+
+    # Remove common leading indentation and join lines
+    normalized_lines = []
+    for line in lines:
+        if line.strip():  # Non-empty line
+            normalized_lines.append(line[min_indent:])
+        else:  # Empty line
+            normalized_lines.append("")
+
+    return "\n".join(normalized_lines)
+
+
 @app.post("/execute", response_model=ExecutionResult)
 async def execute_code(code_execution: CodeExecution):
+    # Normalize the code indentation
+    normalized_code = normalize_indentation(code_execution.code)
+
     # Create a unique temporary file
     file_id = str(uuid.uuid4())
     temp_dir = tempfile.mkdtemp()
@@ -30,7 +76,7 @@ async def execute_code(code_execution: CodeExecution):
     try:
         # Write code to temporary file
         with open(file_path, "w") as f:
-            f.write(code_execution.code)
+            f.write(normalized_code)
 
         # Execute the code with timeout
         process = subprocess.Popen(
@@ -61,6 +107,13 @@ async def execute_code(code_execution: CodeExecution):
             os.rmdir(temp_dir)
         except:
             pass
+
+
+@app.post("/format")
+async def format_code(code_execution: CodeExecution):
+    """Preview how the code will be formatted without executing it"""
+    normalized_code = normalize_indentation(code_execution.code)
+    return {"original_code": code_execution.code, "formatted_code": normalized_code}
 
 
 @app.get("/health")

@@ -1,17 +1,48 @@
 import requests
 
+# Example 1: Correct way to send code
+code1 = """def calculate():
+    x = 10
+    y = 20
+    print(x + y)
+calculate()"""
 
-def execute_code(code: str, timeout: int = 5):
-    url = "http://localhost:8000/execute"
-    response = requests.post(url, json={"code": code, "timeout": timeout})
-    return response.json()
+# Example 2: Also correct, using triple quotes with no initial newline
+code2 = """def hello():
+    print("Hello, World!")
+hello()"""
 
+# Example 3: If you need multiple blank lines, that's fine too
+code3 = """
+def greet(name):
+    print(f"Hello, {name}!")
 
-code = """
-print("Hello, World!")
-result = sum(range(10))
-print(f"Sum: {result}")
+def main():
+    greet("World")
+
+main()
 """
 
-result = execute_code(code)
-print(result)
+# Test the formatting
+response = requests.post("http://localhost:8000/format", json={"code": code1})
+print(response.json()["formatted_code"])
+
+# If the formatting looks good, execute it
+response = requests.post("http://localhost:8000/execute", json={"code": code1})
+print(response.json())
+
+# Test the formatting
+response = requests.post("http://localhost:8000/format", json={"code": code2})
+print(response.json()["formatted_code"])
+
+# If the formatting looks good, execute it
+response = requests.post("http://localhost:8000/execute", json={"code": code2})
+print(response.json())
+
+# Test the formatting
+response = requests.post("http://localhost:8000/format", json={"code": code3})
+print(response.json()["formatted_code"])
+
+# If the formatting looks good, execute it
+response = requests.post("http://localhost:8000/execute", json={"code": code3})
+print(response.json())
